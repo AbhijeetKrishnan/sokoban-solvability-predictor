@@ -6,6 +6,7 @@ Files must be created using the format specified in
 """
 
 import sys
+import os
 import re
 import logging
 from enum import Enum, auto
@@ -14,10 +15,13 @@ formatter = logging.Formatter('[%(levelname)s] %(funcName)s:%(lineno)d - %(messa
 fh = logging.FileHandler('debug_log.log', 'w')
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+ch.setFormatter(formatter)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(fh)
-
+logger.addHandler(ch)
 
 LEVEL_ROW = re.compile(r'^[#@\+\$\*\. ]+$')
 
@@ -73,10 +77,37 @@ def parse_levels(contents: str) -> list:
                     levels[level_idx][row_idx][col_idx] = SokoTile.FLOOR
     return levels
 
+def process_data(data_root=u'data'):
+    results = []
+    for root, _, files in os.walk(data_root):
+        for file in files:
+            if '.txt' in file:
+                level_file = os.path.join(root, file)
+                with open(level_file, errors='replace') as fp:
+                    contents = fp.read()
+                levels = parse_levels(contents)
+                result = (
+                    level_file,
+                    len(levels),
+                    max([len(level[0]) for level in levels]),
+                    max(len(level) for level in levels)
+                )
+                results.append(result)
+                logger.info(result)
+    logger.info(f'# of level collections: {len(results)}')
+    logger.info(f'# of levels: {sum([result[1] for result in results])}')
+    logger.info(f'Max overall level width: {max([result[2] for result in results])}')
+    logger.info(f'Max overall level height: {max([result[3] for result in results])}')
+
 if __name__ == '__main__':
-    level_file = sys.argv[1]
-    with open(level_file) as fp:
-        contents = fp.read()
-    levels = parse_levels(contents)
-    print(len(levels))
-    print(levels[0])
+    if len(sys.argv) == 2:
+        level_file = sys.argv[1]
+        with open(level_file, errors='replace') as fp:
+            contents = fp.read()
+        levels = parse_levels(contents)
+        logger.info(f'Level file: {level_file}')
+        logger.info(f'# of levels found: {len(levels)}')
+        logger.info(f'Max level width: {max([len(level[0]) for level in levels])}')
+        logger.info(f'Max level height: {max(len(level) for level in levels)}')
+    else:
+        process_data()
