@@ -25,6 +25,13 @@ def load_level_dataset():
     # 5. use some split for test-train
     #    Any way to augment the level for non-solvability? Could iteratively remove one box and add
     #    the newly unsolvable level to the dataset
+    # Potential level generators to try -
+    # - http://ianparberry.com/techreports/LARC-2011-01.pdf
+    # - https://github.com/AlliBalliBaba/Sokoban-Level-Generator
+    # - https://digital.library.unt.edu/ark:/67531/metadc801887/m2/1/high_res_d/dissertation.pdf
+    # - https://arxiv.org/pdf/2005.08368.pdf
+    # - https://hosei.repo.nii.ac.jp/?action=repository_action_common_download&item_id=22740&item_no=1&attribute_id=22&file_no=1
+    # - https://www.aaai.org/ocs/index.php/AIIDE/AIIDE16/paper/viewFile/14006/13595
     pass
 
 if __name__ == '__main__':
