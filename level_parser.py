@@ -9,7 +9,7 @@ import sys
 import os
 import re
 import logging
-from enum import Enum, auto
+from enum import IntEnum, auto
 
 formatter = logging.Formatter('[%(levelname)s] %(funcName)s:%(lineno)d - %(message)s')
 fh = logging.FileHandler('debug_log.log', 'w')
@@ -25,7 +25,7 @@ logger.addHandler(ch)
 
 LEVEL_ROW = re.compile(r'^[#@\+\$\*\. ]+$')
 
-class SokoTile(Enum):
+class SokoTile(IntEnum):
     WALL = auto()
     PLAYER = auto()
     P_ON_GOAL = auto()
@@ -34,7 +34,7 @@ class SokoTile(Enum):
     GOAL = auto()
     FLOOR = auto()
 
-def parse_levels(contents: str) -> list:
+def parse_levels(contents: str, max_width=None, max_height=None) -> list:
     # TODO: handle assumption of level beginning and ending with a "level row" 
     levels = []
     in_level = False
@@ -75,17 +75,32 @@ def parse_levels(contents: str) -> list:
                     levels[level_idx][row_idx][col_idx] = SokoTile.GOAL
                 elif col == ' ':
                     levels[level_idx][row_idx][col_idx] = SokoTile.FLOOR
+        # Padding the levels to max_width, max_height with wall tiles
+        if max_width:
+            for row_idx, row in enumerate(levels[level_idx]):
+                pre_w_pad, post_w_pad = (max_width - len(row)) // 2, max_width - len(row) - ((max_width - len(row)) // 2)
+                levels[level_idx][row_idx] = [SokoTile.WALL] * pre_w_pad + row + [SokoTile.WALL] * post_w_pad
+                assert len(levels[level_idx][row_idx]) == max_width, f'row {row_idx} of level {level_idx} is of length {len(levels[level_idx][row_idx])} and not {max_width}!'
+        if max_height:
+            level = levels[level_idx]
+            pre_h_pad, post_h_pad = (max_height - len(level)) // 2, max_height - len(level) - ((max_height - len(level)) // 2)
+            levels[level_idx] = [[SokoTile.WALL] * len(level[0]) for _ in range(pre_h_pad)] + level + [[SokoTile.WALL] * len(level[0]) for _ in range(post_h_pad)]
+            assert len(levels[level_idx]) == max_height, f'level {level_idx} is not of height {max_height}!'
+    for level in levels:
+        logger.debug(f'Level width: {len(level[0])}')
+        logger.debug(f'Level height: {len(level)}')        
     return levels
 
-def process_data(data_root=u'data'):
+def process_data(max_width=50, max_height=50, data_root=u'data'):
     results = []
+    all_levels = []
     for root, _, files in os.walk(data_root):
         for file in files:
             if '.txt' in file:
                 level_file = os.path.join(root, file)
                 with open(level_file, errors='replace') as fp:
                     contents = fp.read()
-                levels = parse_levels(contents)
+                levels = parse_levels(contents, max_width, max_height)
                 result = (
                     level_file,
                     len(levels),
@@ -93,11 +108,13 @@ def process_data(data_root=u'data'):
                     max(len(level) for level in levels)
                 )
                 results.append(result)
+                all_levels.extend(levels)
                 logger.info(result)
     logger.info(f'# of level collections: {len(results)}')
     logger.info(f'# of levels: {sum([result[1] for result in results])}')
     logger.info(f'Max overall level width: {max([result[2] for result in results])}')
     logger.info(f'Max overall level height: {max([result[3] for result in results])}')
+    return all_levels
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
