@@ -1,4 +1,5 @@
 import logging
+import datetime
 
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -27,13 +28,6 @@ def get_labels(levels):
     return labels
 
 def load_level_dataset(test_train_split=0.2):
-    # TODO: write this
-    # 1. obtain all level files in data/ via process_data
-    # 2. convert every level file into tensor (probably first merge them all together into a giant
-    #   tensor, then 1HE them in one go)
-    # 3. pad the data to 50x50
-    # 4. call a planner function to solve the level to determine the y-label
-    # 5. use some split for test-train
     #    Any way to augment the level for non-solvability? Could iteratively remove one box and add
     #    the newly unsolvable level to the dataset
     # Potential level generators to try -
@@ -85,12 +79,16 @@ def train_model():
         metrics = [tf.keras.metrics.BinaryAccuracy()]
     )
 
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+
     history = model.fit(
         x_train,
         y_train,
         batch_size=64,
         epochs=2,
-        validation_data=(x_val, y_val)
+        validation_data=(x_val, y_val),
+        callbacks=[tensorboard_callback]
     )
 
     results = model.evaluate(x_test, y_test, batch_size=128)
