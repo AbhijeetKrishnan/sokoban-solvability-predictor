@@ -1,7 +1,7 @@
-    """Solves a parsed Sokoban level by translating the level to PDDL and using a planner
-    """
+"""Solves a parsed Sokoban level by translating the level to PDDL and using a planner
+"""
 
-from level_parser import SokoTile
+from level_parser import SokoTile, process_data
 import random
 
 
@@ -33,7 +33,7 @@ def translate_to_pddl(level) -> str:
                 if col == SokoTile.BOX or col == SokoTile.B_ON_GOAL:
                     stones.append((col_idx, row_idx))
         for i in range(len(stones)):
-            objects.append((f'stone-{i:02}', 'stone'))
+            objects.append((f'stone-{i+1:02}', 'stone'))
 
     def build_init(level):
         goals = []
@@ -43,7 +43,7 @@ def translate_to_pddl(level) -> str:
         at_stone = []
         at_goal = []
         clear = []
-        stone_idx = 1
+        stone_idx = 0
 
         for row_idx, row in enumerate(level):
             for col_idx, col in enumerate(row):
@@ -61,8 +61,8 @@ def translate_to_pddl(level) -> str:
                 if col in (SokoTile.PLAYER, SokoTile.P_ON_GOAL):
                     at_player = [('at', 'player-01', pos)]
                 if col in (SokoTile.BOX, SokoTile.B_ON_GOAL):
-                    at_stone.append(('at-stone', f'stone-{stone_idx:02}', pos))
-                    stone_idx += 1
+                    at_stone.append(('at', f'stone-{stone_idx+1:02}', pos))
+                    goal.append(('at-goal', f'stone-{stone_idx+1:02}'))
                 if col is not SokoTile.WALL:
                     clear.append(('clear', pos))
         
@@ -70,21 +70,18 @@ def translate_to_pddl(level) -> str:
         init.extend(non_goals)
         init.extend(move_dirs)
         init.extend(at_player)
+        init.extend(at_stone)
         init.extend(at_goal)
+        init.extend(goal)
         init.extend(clear)
-
-    def build_goal(level):
-        for stone, _ in stones:
-            goal.append(('at-goal', stone))
 
     build_objects(level)
     build_init(level)
-    build_goal(level)
 
     def construct_problem_str():
         objects_str = '\n\t\t'.join([f'{obj[0]} - {obj[1]}' for obj in objects])
-        init_str = '\n\t\t'.join([f'({" ".join(pred)})' for pred in init])
-        goal_str = '\n\t\t'.join([f'({" ".join(pred)})' for pred in goal])
+        init_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in init])
+        goal_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in goal])
         goal_str = f"(and \n\t\t{goal_str})" if len(goal) > 1 else f"\n\t\t{goal_str}"
         problem_str = f"""(define (problem {problem_name})
     (:domain {domain})
@@ -109,3 +106,10 @@ def solve(problem: str) -> bool:
         problem (str): The PDDL problem file to solve
     """
     pass
+
+if __name__ == '__main__':
+    all_levels = process_data()
+    level = all_levels[0]
+    with open('tmp_problem.pddl', 'w') as problem_file:
+        problem_file.write(translate_to_pddl(level))
+    
