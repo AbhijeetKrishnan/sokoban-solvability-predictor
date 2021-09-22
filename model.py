@@ -5,6 +5,7 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 from level_parser import SokoTile, process_data, logger
+from level_solver import solve
 
 def encode_level(level):
     "Convert level into representation used for input to NN"
@@ -25,6 +26,8 @@ def create_model():
 def get_labels(levels):
     # TODO: call a planner function to solve the level to determine the y-label
     labels = [1] * len(levels)
+    for idx, level in enumerate(levels):
+        labels[i] = solve(level)
     return labels
 
 def load_level_dataset(test_train_split=0.2):

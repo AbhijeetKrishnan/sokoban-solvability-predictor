@@ -1,8 +1,10 @@
 """Solves a parsed Sokoban level by translating the level to PDDL and using a planner
 """
 
-from level_parser import SokoTile, process_data
+from level_parser import SokoTile, process_data, logger
 import random
+import subprocess
+import os
 
 
 def translate_to_pddl(level) -> str:
@@ -62,7 +64,9 @@ def translate_to_pddl(level) -> str:
                     at_player = [('at', 'player-01', pos)]
                 if col in (SokoTile.BOX, SokoTile.B_ON_GOAL):
                     at_stone.append(('at', f'stone-{stone_idx+1:02}', pos))
-                    goal.append(('at-goal', f'stone-{stone_idx+1:02}'))
+                    if col == SokoTile.B_ON_GOAL:
+                        at_goal.append(('at-goal', f'stone-{stone_idx+1:02}'))
+                    stone_idx += 1
                 if col is not SokoTile.WALL:
                     clear.append(('clear', pos))
         
@@ -72,13 +76,17 @@ def translate_to_pddl(level) -> str:
         init.extend(at_player)
         init.extend(at_stone)
         init.extend(at_goal)
-        init.extend(goal)
         init.extend(clear)
+
+    def build_goal():
+        goal.extend([('at-goal', f'stone-{stone_idx+1:02}') for stone_idx, _ in enumerate(stones)])
 
     build_objects(level)
     build_init(level)
+    build_goal()
 
     def construct_problem_str():
+        # TODO: add original level pattern as comment at the start of file
         objects_str = '\n\t\t'.join([f'{obj[0]} - {obj[1]}' for obj in objects])
         init_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in init])
         goal_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in goal])
@@ -99,17 +107,39 @@ def translate_to_pddl(level) -> str:
 
     return construct_problem_str()
 
-def solve(problem: str) -> bool:
+def solve(level, keep_problem=False) -> bool:
     """Calls a planner to solve a PDDL Sokoban instance and return whether a solution exists
 
     Args:
-        problem (str): The PDDL problem file to solve
+        level: The level to solve
     """
-    pass
+    FAST_DOWNWARD = os.path.join(os.path.expanduser('~'), 'fast-downward-20.06', 'fast-downward.py')
+    ALIAS = 'lama-first'
+    DOMAIN = os.path.join(os.getcwd(), 'domain.pddl')
+    problem_filename = os.path.join(os.getcwd(), 'tmp.pddl')
+
+    def write_problem_str(problem):
+        with open(problem_filename, 'w') as problem_file:
+            problem_file.write(problem)
+    
+    problem = translate_to_pddl(level)
+    write_problem_str(problem)
+
+    command_list = [FAST_DOWNWARD, f'--alias {ALIAS}', f'{DOMAIN}', f'{problem_filename}']
+    logger.debug(command_list)
+    subprocess.run(command_list)
+    if os.path.isfile('sas_plan'):
+        exists = True
+        os.remove('sas_plan')
+    else:
+        exists = False
+    if not keep_problem:
+        os.remove(problem_filename)
+    return exists
 
 if __name__ == '__main__':
-    all_levels = process_data()
+    all_levels = process_data(pad=True)
     level = all_levels[0]
-    with open('tmp_problem.pddl', 'w') as problem_file:
-        problem_file.write(translate_to_pddl(level))
+    soln_exists = solve(level)
+    print(soln_exists)
     

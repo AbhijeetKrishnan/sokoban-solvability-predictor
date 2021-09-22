@@ -34,7 +34,7 @@ class SokoTile(IntEnum):
     GOAL = auto()
     FLOOR = auto()
 
-def parse_levels(contents: str, max_width=None, max_height=None) -> list:
+def parse_levels(contents: str) -> list:
     # TODO: handle assumption of level beginning and ending with a "level row" 
     levels = []
     in_level = False
@@ -75,7 +75,12 @@ def parse_levels(contents: str, max_width=None, max_height=None) -> list:
                     levels[level_idx][row_idx][col_idx] = SokoTile.GOAL
                 elif col == ' ':
                     levels[level_idx][row_idx][col_idx] = SokoTile.FLOOR
-        # Padding the levels to max_width, max_height with wall tiles
+
+    return levels
+
+def pad_levels(levels, max_width=None, max_height=None):
+    # Padding the levels to max_width, max_height with wall tiles
+    for level_idx, level in enumerate(levels):
         if max_width:
             for row_idx, row in enumerate(levels[level_idx]):
                 pre_w_pad, post_w_pad = (max_width - len(row)) // 2, max_width - len(row) - ((max_width - len(row)) // 2)
@@ -91,7 +96,7 @@ def parse_levels(contents: str, max_width=None, max_height=None) -> list:
         logger.debug(f'Level height: {len(level)}')        
     return levels
 
-def process_data(max_width=50, max_height=50, data_root=u'data'):
+def process_data(pad=True, max_width=50, max_height=50, data_root=u'data'):
     results = []
     all_levels = []
     for root, _, files in os.walk(data_root):
@@ -100,7 +105,11 @@ def process_data(max_width=50, max_height=50, data_root=u'data'):
                 level_file = os.path.join(root, file)
                 with open(level_file, errors='replace') as fp:
                     contents = fp.read()
-                levels = parse_levels(contents, max_width, max_height)
+                unpadded_levels = parse_levels(contents)
+                if pad:
+                    levels = pad_levels(unpadded_levels, max_width, max_height)
+                else:
+                    levels = unpadded_levels
                 result = (
                     level_file,
                     len(levels),
@@ -121,7 +130,7 @@ if __name__ == '__main__':
         level_file = sys.argv[1]
         with open(level_file, errors='replace') as fp:
             contents = fp.read()
-        levels = parse_levels(contents)
+        levels = pad_levels(parse_levels(contents), 50, 50)
         logger.info(f'Level file: {level_file}')
         logger.info(f'# of levels found: {len(levels)}')
         logger.info(f'Max level width: {max([len(level[0]) for level in levels])}')
