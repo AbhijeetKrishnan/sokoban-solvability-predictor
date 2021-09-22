@@ -1,10 +1,11 @@
 """Solves a parsed Sokoban level by translating the level to PDDL and using a planner
 """
 
-from level_parser import SokoTile, process_data, logger
+import os
 import random
 import subprocess
-import os
+
+from level_parser import SokoTile, logger, process_data
 
 
 def translate_to_pddl(level) -> str:

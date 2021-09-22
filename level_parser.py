@@ -5,10 +5,10 @@ Files must be created using the format specified in
     http://www.sokobano.de/wiki/index.php?title=Level_format
 """
 
-import sys
+import logging
 import os
 import re
-import logging
+import sys
 from enum import IntEnum, auto
 
 formatter = logging.Formatter('[%(levelname)s] %(funcName)s:%(lineno)d - %(message)s')
