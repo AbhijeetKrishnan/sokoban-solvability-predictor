@@ -125,9 +125,10 @@ def solve(level, keep_problem=False) -> bool:
     problem = translate_to_pddl(level)
     write_problem_str(problem)
 
-    command_list = [FAST_DOWNWARD, f'--alias {ALIAS}', f'{DOMAIN}', f'{problem_filename}']
+    command_list = [FAST_DOWNWARD, '--alias',  ALIAS, DOMAIN, problem_filename]
     logger.debug(command_list)
-    subprocess.run(command_list)
+    process = subprocess.run(command_list)
+    logger.debug(process)
     if os.path.isfile('sas_plan'):
         exists = True
         os.remove('sas_plan')
