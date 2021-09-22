@@ -27,7 +27,7 @@ def get_labels(levels):
     # TODO: call a planner function to solve the level to determine the y-label
     labels = [1] * len(levels)
     for idx, level in enumerate(levels):
-        labels[i] = solve(level)
+        labels[idx] = solve(level)
     return labels
 
 def load_level_dataset(test_train_split=0.2):
