@@ -1,13 +1,14 @@
 import datetime
 
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
-from level_parser import SokoTile, logger, process_data
+from level_parser import SokoLevel, SokoTile, logger, process_data_directory
 from level_solver import solve
 
 
-def encode_level(level):
+def encode_level(level: SokoLevel):
     "Convert level into representation used for input to NN"
     return tf.one_hot(level, depth=len(SokoTile))
 
@@ -27,10 +28,10 @@ def get_labels(levels):
     labels = [1] * len(levels)
     for idx, level in enumerate(levels):
         labels[idx] = solve(level)
-    return labels
+    return np.array(labels)
 
 def load_level_dataset(test_train_split=0.2):
-    levels = process_data(max_width=50, max_height=50)
+    levels = process_data_directory('data', max_width=50, max_height=50)
     levels_tensor = tf.convert_to_tensor(levels, dtype=tf.int32)
     levels_1he = tf.one_hot(levels_tensor, depth=len(SokoTile))
 
@@ -46,7 +47,7 @@ def load_level_dataset(test_train_split=0.2):
     logger.info(f'Levels shape: {levels_1he_shuffled.shape}')
     logger.info(f'Labels shape: {labels_shuffled.shape}')
 
-    # TODO: use tfds to do this
+    # TODO: use tfds to do this (or tf.data)
     num_test = int(len(levels) * test_train_split)
     x_test = levels_1he_shuffled[-num_test:]
     y_test = labels_shuffled[-num_test:]

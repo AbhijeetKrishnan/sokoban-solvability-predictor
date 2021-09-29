@@ -10,6 +10,7 @@ import os
 import re
 import sys
 from enum import IntEnum, auto
+from typing import List, Optional
 
 formatter = logging.Formatter('[%(levelname)s] %(funcName)s:%(lineno)d - %(message)s')
 fh = logging.FileHandler('debug_log.log', 'w')
@@ -23,8 +24,6 @@ logger.setLevel(logging.DEBUG)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
-LEVEL_ROW = re.compile(r'^[#@\+\$\*\. ]+$')
-
 class SokoTile(IntEnum):
     WALL = auto()
     PLAYER = auto()
@@ -34,8 +33,56 @@ class SokoTile(IntEnum):
     GOAL = auto()
     FLOOR = auto()
 
-def parse_levels(contents: str) -> list:
-    # TODO: handle assumption of level beginning and ending with a "level row" 
+    @staticmethod
+    def to_SokoTile(char: str) -> 'SokoTile':
+        "Convert a character used to describe a Sokoban tile into its corresponding SokoTile"
+        if char == '#':
+            sokotile = SokoTile.WALL
+        elif char == '@':
+            sokotile = SokoTile.PLAYER
+        elif char == '+':
+            sokotile = SokoTile.P_ON_GOAL
+        elif char == '$':
+            sokotile = SokoTile.BOX
+        elif char == '*':
+            sokotile = SokoTile.B_ON_GOAL
+        elif char == '.':
+            sokotile = SokoTile.GOAL
+        elif char == ' ':
+            sokotile = SokoTile.FLOOR
+        else:
+            raise Exception(f'Unexpected Sokoban tile character {char}')
+        return sokotile
+
+SokoLevel = List[List[SokoTile]]
+
+def _replace_tile_chars(char_level: List[List[str]]) -> SokoLevel:
+    """Replace the character tile symbols in a Sokoban level with SokoTiles
+
+    Args:
+        char_level (List[List[str]]): Sokoban level with character tile symbols
+
+    Returns:
+        SokoLevel: Sokoban level with SokoTile tile symbols
+    """
+    return [[SokoTile.to_SokoTile(char) for char in row] for row in char_level]
+            
+
+def _parse_levels(contents: str) -> List[SokoLevel]:
+    """Parse a text file containing Sokoban levels and output the list of levels in it.
+    Each level is output as an array of SokoTiles.
+
+    Assumes that a level begins and ends with a string that contains the allowed characters in a
+    Sokoban level description, namely #, @, +, $, *, . and ⎵ (space). This is a fairly reasonable
+    assumption given the format of the levels seen so far.
+
+    Args:
+        contents (str): The contents of the text-based Sokoban level collection
+
+    Returns:
+        list: A list of SokoTile arrays corresponding to Sokoban levels
+    """
+    LEVEL_ROW = re.compile(r'^[#@\+\$\*\. ]+$')
     levels = []
     in_level = False
     for row in contents.split('\n'):
@@ -56,58 +103,62 @@ def parse_levels(contents: str) -> list:
         else:
             logger.debug('No action on this row')
 
-    # convert level chars to enum constants in-place
-    # TODO: cleaner way to do this?
-    for level_idx, level in enumerate(levels):
-        for row_idx, row in enumerate(levels[level_idx]):
-            for col_idx, col in enumerate(levels[level_idx][row_idx]):
-                if col == '#':
-                    levels[level_idx][row_idx][col_idx] = SokoTile.WALL
-                elif col == '@':
-                    levels[level_idx][row_idx][col_idx] = SokoTile.PLAYER
-                elif col == '+':
-                    levels[level_idx][row_idx][col_idx] = SokoTile.P_ON_GOAL
-                elif col == '$':
-                    levels[level_idx][row_idx][col_idx] = SokoTile.BOX
-                elif col == '*':
-                    levels[level_idx][row_idx][col_idx] = SokoTile.B_ON_GOAL
-                elif col == '.':
-                    levels[level_idx][row_idx][col_idx] = SokoTile.GOAL
-                elif col == ' ':
-                    levels[level_idx][row_idx][col_idx] = SokoTile.FLOOR
+    # convert level chars to enum constants
+    sokotile_levels = [_replace_tile_chars(level) for level in levels]
+    return sokotile_levels
 
-    return levels
+def _pad_levels(levels: List[SokoLevel], max_width: Optional[int] = None, max_height: Optional[int] = None, pad_tile: SokoTile = SokoTile.WALL) -> List[SokoLevel]:
+    """Pad every level in the input list of SokoLevels with wall tiles upto the specified dimensions.
 
-def pad_levels(levels, max_width=None, max_height=None):
-    # Padding the levels to max_width, max_height with wall tiles
+    Args:
+        levels (List[SokoLevel]): List of SokoLevels to be padded
+        max_width (Optional[int], optional): Max width to pad level to. Defaults to None.
+        max_height (Optional[int], optional): Max height to pad level to. Defaults to None.
+
+    Returns:
+        List[SokoLevel]: list of padded SokoLevels
+    """
     for level_idx, level in enumerate(levels):
         if max_width:
             for row_idx, row in enumerate(levels[level_idx]):
                 pre_w_pad, post_w_pad = (max_width - len(row)) // 2, max_width - len(row) - ((max_width - len(row)) // 2)
-                levels[level_idx][row_idx] = [SokoTile.WALL] * pre_w_pad + row + [SokoTile.WALL] * post_w_pad
+                levels[level_idx][row_idx] = [pad_tile] * pre_w_pad + row + [pad_tile] * post_w_pad
                 assert len(levels[level_idx][row_idx]) == max_width, f'row {row_idx} of level {level_idx} is of length {len(levels[level_idx][row_idx])} and not {max_width}!'
         if max_height:
             level = levels[level_idx]
             pre_h_pad, post_h_pad = (max_height - len(level)) // 2, max_height - len(level) - ((max_height - len(level)) // 2)
-            levels[level_idx] = [[SokoTile.WALL] * len(level[0]) for _ in range(pre_h_pad)] + level + [[SokoTile.WALL] * len(level[0]) for _ in range(post_h_pad)]
+            levels[level_idx] = [[pad_tile] * len(level[0]) for _ in range(pre_h_pad)] + level + [[pad_tile] * len(level[0]) for _ in range(post_h_pad)]
             assert len(levels[level_idx]) == max_height, f'level {level_idx} is not of height {max_height}!'
-    for level in levels:
+            
         logger.debug(f'Level width: {len(level[0])}')
-        logger.debug(f'Level height: {len(level)}')        
+        logger.debug(f'Level height: {len(level)}')
+
     return levels
 
-def process_data(pad=True, max_width=50, max_height=50, data_root=u'data'):
+def process_data_directory(data_root: str=u'data', max_width: Optional[int]=50, max_height: Optional[int]=50) -> List[SokoLevel]:
+    """Return a list of padded Sokoban levels from all text files in a directory.
+
+    Args:
+        data_root (str, optional): The root of the data directory containing the Sokoban level descriptions. Defaults to u'data'.
+        max_width (Optional[int], optional): Max width to pad level to. Defaults to 50.
+        max_height (Optional[int], optional): Max height to pad level to. Defaults to 50.
+
+    Returns:
+        List[SokoLevel]: List of all padded Sokoban levels found in the directory.
+    """
     results = []
     all_levels = []
     for root, _, files in os.walk(data_root):
         for file in files:
-            if '.txt' in file:
+            _, ext = os.path.splitext(file)
+            logger.debug(f'Filename: {file}, extension: {ext}')
+            if ext == '.txt':
                 level_file = os.path.join(root, file)
                 with open(level_file, errors='replace') as fp:
                     contents = fp.read()
-                unpadded_levels = parse_levels(contents)
-                if pad:
-                    levels = pad_levels(unpadded_levels, max_width, max_height)
+                unpadded_levels = _parse_levels(contents)
+                if max_width and max_height:
+                    levels = _pad_levels(unpadded_levels, max_width, max_height)
                 else:
                     levels = unpadded_levels
                 result = (
@@ -130,10 +181,10 @@ if __name__ == '__main__':
         level_file = sys.argv[1]
         with open(level_file, errors='replace') as fp:
             contents = fp.read()
-        levels = pad_levels(parse_levels(contents), 50, 50)
+        levels = _pad_levels(_parse_levels(contents), 50, 50)
         logger.info(f'Level file: {level_file}')
         logger.info(f'# of levels found: {len(levels)}')
         logger.info(f'Max level width: {max([len(level[0]) for level in levels])}')
         logger.info(f'Max level height: {max(len(level) for level in levels)}')
     else:
-        process_data()
+        process_data_directory()
