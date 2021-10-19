@@ -13,11 +13,17 @@ def translate_to_pddl(level: SokoLevel) -> str:
     domain
     """
     problem_name = f'p{random.randrange(100, 999)}-microban-sequential'
+    comment = []
     domain = 'sokoban-sequential'
     objects = []
     init = []
     goal = []
     stones = [] # box tiles are referred to as "stones" in the IPC Sokoban domain
+
+    def build_comment(level):
+        for row in level:
+            comment_row = [tile.to_char() for tile in row]
+            comment.append(comment_row)
 
     def build_objects(level):
         # add directions
@@ -82,17 +88,20 @@ def translate_to_pddl(level: SokoLevel) -> str:
     def build_goal():
         goal.extend([('at-goal', f'stone-{stone_idx+1:02}') for stone_idx, _ in enumerate(stones)])
 
+    build_comment(level)
     build_objects(level)
     build_init(level)
     build_goal()
 
     def construct_problem_str():
-        # TODO: add original level pattern as comment at the start of file
+        comment_str = '\n'.join([f'; {"".join(row)}' for row in comment])
         objects_str = '\n\t\t'.join([f'{obj[0]} - {obj[1]}' for obj in objects])
         init_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in init])
         goal_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in goal])
         goal_str = f"(and \n\t\t{goal_str})" if len(goal) > 1 else f"\n\t\t{goal_str}"
-        problem_str = f"""(define (problem {problem_name})
+        problem_str = f"""{comment_str}
+
+(define (problem {problem_name})
     (:domain {domain})
     (:objects
         {objects_str}
@@ -147,6 +156,6 @@ def solve(level: SokoLevel, keep_problem: bool=False) -> bool:
 if __name__ == '__main__':
     all_levels = process_data_directory()
     level = all_levels[0]
-    soln_exists = solve(level)
+    soln_exists = solve(level, keep_problem=True)
     print(soln_exists)
     

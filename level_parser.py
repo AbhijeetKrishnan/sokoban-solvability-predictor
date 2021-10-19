@@ -54,6 +54,24 @@ class SokoTile(IntEnum):
             raise Exception(f'Unexpected Sokoban tile character {char}')
         return sokotile
 
+    def to_char(tile) -> str:
+        "Convert a SokoTile into its corresponding character representation"
+        if tile.name == 'WALL':
+            soko_char = '#'
+        elif tile.name == 'PLAYER':
+            soko_char = '@'
+        elif tile.name == 'P_ON_GOAL':
+            soko_char = '+'
+        elif tile.name == 'BOX':
+            soko_char = '$'
+        elif tile.name == 'B_ON_GOAL':
+            soko_char = '*'
+        elif tile.name == 'GOAL':
+            soko_char = '.'
+        elif tile.name == 'FLOOR':
+            soko_char = ' '
+        return soko_char
+
 SokoLevel = List[List[SokoTile]]
 
 def _replace_tile_chars(char_level: List[List[str]]) -> SokoLevel:
