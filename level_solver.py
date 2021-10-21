@@ -8,22 +8,34 @@ import subprocess
 from level_parser import SokoLevel, SokoTile, logger, process_data_directory
 
 
+def level_to_string(level: SokoLevel, join_char: str='/') -> str:
+    """Translate a level to a single-line string representing the level using character tiles
+
+    Args:
+        level (SokoLevel): SokoTile level array
+        join_char (str): character to use to join rows into a single string
+
+    Returns:
+        str: single-line string representing level using character tile representation. Lines in the
+        level are separated by '/'
+    """
+    ret_arr = []
+    for row in level:
+        str_row = [tile.to_char() for tile in row]
+        ret_arr.append(str_row)
+    ret_str = join_char.join([f'; {"".join(row)}' for row in ret_arr])
+    return ret_str
+
 def translate_to_pddl(level: SokoLevel) -> str:
     """Translates a parsed Sokoban level into a PDDL problem file which matches the IPC 2011 Sokoban
     domain
     """
     problem_name = f'p{random.randrange(100, 999)}-microban-sequential'
-    comment = []
     domain = 'sokoban-sequential'
     objects = []
     init = []
     goal = []
     stones = [] # box tiles are referred to as "stones" in the IPC Sokoban domain
-
-    def build_comment(level):
-        for row in level:
-            comment_row = [tile.to_char() for tile in row]
-            comment.append(comment_row)
 
     def build_objects(level):
         # add directions
@@ -88,13 +100,12 @@ def translate_to_pddl(level: SokoLevel) -> str:
     def build_goal():
         goal.extend([('at-goal', f'stone-{stone_idx+1:02}') for stone_idx, _ in enumerate(stones)])
 
-    build_comment(level)
     build_objects(level)
     build_init(level)
     build_goal()
 
     def construct_problem_str():
-        comment_str = '\n'.join([f'; {"".join(row)}' for row in comment])
+        comment_str = level_to_string(level, '\n')
         objects_str = '\n\t\t'.join([f'{obj[0]} - {obj[1]}' for obj in objects])
         init_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in init])
         goal_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in goal])
