@@ -8,12 +8,12 @@ import subprocess
 from level_parser import SokoLevel, SokoTile, logger, process_data_directory
 
 
-def level_to_string(level: SokoLevel, join_char: str='/') -> str:
+def level_to_string(level: SokoLevel, is_comment: bool=False) -> str:
     """Translate a level to a single-line string representing the level using character tiles
 
     Args:
         level (SokoLevel): SokoTile level array
-        join_char (str): character to use to join rows into a single string
+        is_comment (bool): whether the string is to be used as a PDDL comment
 
     Returns:
         str: single-line string representing level using character tile representation. Lines in the
@@ -23,7 +23,10 @@ def level_to_string(level: SokoLevel, join_char: str='/') -> str:
     for row in level:
         str_row = [tile.to_char() for tile in row]
         ret_arr.append(str_row)
-    ret_str = join_char.join([f'; {"".join(row)}' for row in ret_arr])
+    if is_comment:
+        ret_str = '\n'.join([f'; {"".join(row)}' for row in ret_arr])
+    else:
+        ret_str = '/'.join([f'{"".join(row)}' for row in ret_arr])
     return ret_str
 
 def translate_to_pddl(level: SokoLevel) -> str:
@@ -105,7 +108,7 @@ def translate_to_pddl(level: SokoLevel) -> str:
     build_goal()
 
     def construct_problem_str():
-        comment_str = level_to_string(level, '\n')
+        comment_str = level_to_string(level, True)
         objects_str = '\n\t\t'.join([f'{obj[0]} - {obj[1]}' for obj in objects])
         init_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in init])
         goal_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in goal])
@@ -164,9 +167,23 @@ def solve(level: SokoLevel, keep_problem: bool=False) -> bool:
         os.remove(problem_filename)
     return exists
 
+def build_soln_csv():
+    import csv
+    with open('is_solvable.csv', 'w', newline='') as csvfile:
+        field_names = ['level_desc', 'is_solvable']
+        writer = csv.DictWriter(csvfile, fieldnames=field_names)
+        writer.writeheader()
+        all_levels = process_data_directory()
+        for level in all_levels:
+            level_str = level_to_string(level)
+            soln_exists = solve(level)
+            row = {'level_desc': level_str, 'is_solvable': soln_exists}
+            logger.debug(f'Writing row {row}')
+            writer.writerow(row)
+
 if __name__ == '__main__':
-    all_levels = process_data_directory()
-    level = all_levels[0]
-    soln_exists = solve(level, keep_problem=True)
-    print(soln_exists)
-    
+    # all_levels = process_data_directory()
+    # level = all_levels[0]
+    # soln_exists = solve(level, keep_problem=True)
+    # print(soln_exists)
+    build_soln_csv()
