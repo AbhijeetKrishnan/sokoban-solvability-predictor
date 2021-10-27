@@ -182,8 +182,8 @@ def build_soln_csv():
             writer.writerow(row)
 
 if __name__ == '__main__':
-    # all_levels = process_data_directory()
-    # level = all_levels[0]
-    # soln_exists = solve(level, keep_problem=True)
-    # print(soln_exists)
+    all_levels = process_data_directory(augment=True)
+    level = all_levels[0]
+    soln_exists = solve(level, keep_problem=True)
+    print(soln_exists)
     build_soln_csv()

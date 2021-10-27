@@ -5,6 +5,7 @@ Files must be created using the format specified in
     http://www.sokobano.de/wiki/index.php?title=Level_format
 """
 
+import copy
 import logging
 import os
 import re
@@ -153,13 +154,43 @@ def _pad_levels(levels: List[SokoLevel], max_width: Optional[int] = None, max_he
 
     return levels
 
-def process_data_directory(data_root: str=u'data', max_width: Optional[int]=50, max_height: Optional[int]=50) -> List[SokoLevel]:
+def augment_level(level: SokoLevel) -> List[SokoLevel]:
+    """Augment dataset of levels by iteratively removing a single block from each level and
+       returning the resultant list of unsolvable levels.
+       If we remove a block, then num(blocks) < num(goals) and the level is impossible to complete
+
+    Args:
+        level (SokoLevel): the level to be augmented
+
+    Returns:
+        List[SokoLevel]: list of unsolvable levels generated from input level
+    """
+
+    ret = []
+    for row_idx, row in enumerate(level):
+        for col_idx, col in enumerate(row):
+            if col == SokoTile.BOX:
+                new_level = copy.deepcopy(level)
+                new_level[row_idx][col_idx] = SokoTile.FLOOR
+                ret.append(new_level)
+            elif col == SokoTile.B_ON_GOAL:
+                new_level = copy.deepcopy(level)
+                new_level[row_idx][col_idx] = SokoTile.GOAL
+                ret.append(new_level)
+    return ret
+
+def process_data_directory(
+    data_root: str=u'data', 
+    max_width: Optional[int]=50, 
+    max_height: Optional[int]=50,
+    augment: bool = False) -> List[SokoLevel]:
     """Return a list of padded Sokoban levels from all text files in a directory.
 
     Args:
         data_root (str, optional): The root of the data directory containing the Sokoban level descriptions. Defaults to u'data'.
         max_width (Optional[int], optional): Max width to pad level to. Defaults to 50.
         max_height (Optional[int], optional): Max height to pad level to. Defaults to 50.
+        augment (bool, optional): whether to augment levels or not. Defaults to False.
 
     Returns:
         List[SokoLevel]: List of all padded Sokoban levels found in the directory.
@@ -187,6 +218,10 @@ def process_data_directory(data_root: str=u'data', max_width: Optional[int]=50, 
                 )
                 results.append(result)
                 all_levels.extend(levels)
+                if augment:
+                    for level in levels:
+                        augmented = augment_level(level)
+                    all_levels.extend(augmented)
                 logger.info(result)
     logger.info(f'# of level collections: {len(results)}')
     logger.info(f'# of levels: {sum([result[1] for result in results])}')
