@@ -145,19 +145,27 @@ def solve(level: SokoLevel, keep_problem: bool=False) -> bool:
     FAST_DOWNWARD = os.path.join(os.path.expanduser('~'), 'fast-downward-20.06', 'fast-downward.py')
     ALIAS = 'lama-first'
     DOMAIN = os.path.join(os.getcwd(), 'domain.pddl')
+    TIMEOUT = 60 # in seconds
     problem_filename = os.path.join(os.getcwd(), 'tmp.pddl')
 
     def write_problem_str(problem):
         with open(problem_filename, 'w') as problem_file:
             problem_file.write(problem)
     
-    problem = translate_to_pddl(level)
+    try:
+        problem = translate_to_pddl(level)
+    except Exception as e:
+        logger.error(f'Error caused by {level_to_string(level)}')
+        raise e
     write_problem_str(problem)
 
-    command_list = [FAST_DOWNWARD, '--alias',  ALIAS, DOMAIN, problem_filename]
+    command_list = [FAST_DOWNWARD, '--alias',  ALIAS, '--overall-time-limit', f'{TIMEOUT // 60}m', DOMAIN, problem_filename]
     logger.debug(command_list)
-    process = subprocess.run(command_list)
-    logger.debug(process)
+    try:
+        process = subprocess.run(command_list, timeout=TIMEOUT)
+        logger.debug(process)
+    except subprocess.TimeoutExpired:
+        logger.warning(f'Timeout after {TIMEOUT}s on problem {level_to_string(level)}')
     if os.path.isfile('sas_plan'):
         exists = True
         os.remove('sas_plan')
@@ -183,7 +191,7 @@ def build_soln_csv():
 
 if __name__ == '__main__':
     all_levels = process_data_directory(augment=True)
-    level = all_levels[0]
-    soln_exists = solve(level, keep_problem=True)
-    print(soln_exists)
+    # level = all_levels[0]
+    # soln_exists = solve(level, keep_problem=True)
+    # print(soln_exists)
     build_soln_csv()

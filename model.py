@@ -1,16 +1,27 @@
 import datetime
+import csv
 
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
-from level_parser import SokoLevel, SokoTile, logger, process_data_directory
-from level_solver import solve
+from level_parser import SokoLevel, SokoTile, logger, str_to_level, _pad_level
 
 
-def encode_level(level: SokoLevel):
-    "Convert level into representation used for input to NN"
-    return tf.one_hot(level, depth=len(SokoTile))
+def read_dataset(dataset: str, pad_width: int, pad_height: int):
+    "Read the csv dataset of unpadded level strings and solvability labels, pad them and return"
+    levels = []
+    labels = []
+    with open(dataset, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            level_desc = row['level_desc'] # level description
+            is_solvable = bool(row['is_solvable'])
+            level = str_to_level(level_desc)
+            padded_level = _pad_level(level, pad_width, pad_height)
+            levels.append(padded_level)
+            labels.append(is_solvable)
+    return levels, labels
 
 def create_model():
     inputs = layers.Input(shape=(50, 50, 7))
@@ -23,19 +34,14 @@ def create_model():
     model = tf.keras.Model(inputs=inputs, outputs=outputs, name="sokoban_solvability_prediction_model")
     logger.info(model.summary())
     return model
-    
-def get_labels(levels):
-    labels = [1] * len(levels)
-    for idx, level in enumerate(levels):
-        labels[idx] = solve(level)
-    return np.array(labels)
 
 def load_level_dataset(test_train_split=0.2):
-    levels = process_data_directory('data', max_width=50, max_height=50)
+    levels, labels = read_dataset('is_solvable.csv', 50, 50) # TODO: infer padding params from dataset
+
     levels_tensor = tf.convert_to_tensor(levels, dtype=tf.int32)
+    logger.debug(f'Levels tensor shape: {levels_tensor.shape}')
     levels_1he = tf.one_hot(levels_tensor, depth=len(SokoTile))
 
-    labels = get_labels(levels)
     labels_tensor = tf.reshape(tf.convert_to_tensor(labels, dtype=tf.int32), shape=(len(levels), 1))
 
     indices = tf.range(start=0, limit=tf.shape(levels_1he)[0], dtype=tf.int32)

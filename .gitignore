@@ -1,6 +1,10 @@
 *.log
 *.txt
 logs/*
+*.sas
+*.pddl
+!domain.pddl
+*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -35,11 +35,14 @@ in the [Sokoban Wiki](http://www.sokobano.de/wiki/index.php?title=Level_format).
 with walls to fit a 50x50 grid. The input to the model is thus a 50x50x7 tensor (the tile types are
 one-hot encoded)
 
-Solvability of a level was determined using TBD
+Solvability of a level was determined using the [FastDownward](https://www.fast-downward.org/)
+planner (v20.06). Using the [IPC-2011 Sokoban
+domain](https://github.com/potassco/pddl-instances/blob/master/ipc-2011/domains/sokoban-sequential-satisficing/domain.pddl)
+as a basis, levels are converted into a PDDL problem file and passed as input to the planner.
 
 The problem of finding unsolvable levels was solved by augmenting the dataset. For
-every level, a single random goal tile was turned into an empty tile, and the resulting unsolvable
-level was added back into the dataset. This creates an even 50/50 distribution of the two classes
+every level, all block tiles were turned one-at-a-time into an empty tile, and the resulting unsolvable
+levels were added back into the dataset. This creates a somewhat more even distribution of the two classes
 (solvable/unsolvable) since every level in the initially sourced levels are designed to be solvable.
 
 Additional levels were obtained using the following level generators -
