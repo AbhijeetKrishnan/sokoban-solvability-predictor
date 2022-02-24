@@ -1,0 +1,6 @@
+[submodule "generators/AlliBalliBaba"]
+	path = generators/AlliBalliBaba
+	url = git@github.com:AlliBalliBaba/Sokoban-Level-Generator.git
+[submodule "generators/parberry"]
+	path = generators/parberry
+	url = git@github.com:Dagobah0/ProceduralSokoban.git
