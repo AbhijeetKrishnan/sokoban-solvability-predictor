@@ -16,7 +16,7 @@ def read_dataset(dataset: str, pad_width: int, pad_height: int):
         reader = csv.DictReader(csvfile)
         for row in reader:
             level_desc = row['level_desc'] # level description
-            is_solvable = bool(row['is_solvable'])
+            is_solvable = bool(row['is_solvable'] == 'True')
             level = str_to_level(level_desc)
             padded_level = _pad_level(level, pad_width, pad_height)
             levels.append(padded_level)
@@ -59,6 +59,14 @@ def load_level_dataset(test_train_split=0.2):
     y_test = labels_shuffled[-num_test:]
     x_train = levels_1he_shuffled[:-num_test]
     y_train = labels_shuffled[:-num_test]
+
+    pos_train = int(tf.math.count_nonzero(y_train))
+    size_train = int(tf.size(y_train))
+    pos_test = int(tf.math.count_nonzero(y_test))
+    size_test = int(tf.size(y_test))
+
+    print(f'Class balance (train): {pos_train} / {size_train - pos_train}')
+    print(f'Class balance (test): {pos_test} / {size_test - pos_test}')
 
     return (x_train, y_train), (x_test, y_test)
 

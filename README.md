@@ -7,11 +7,38 @@ This is a machine learning project attempting to build a model to predict the so
 |:--:|
 | *Ole* from the Haikemono collection of Sokoban levels by Jordi Domènech|
 
+## How to run
+
+1. Download JD_Sokoban level collection from [here](https://u.pcloud.link/publink/show?code=XZ01cWkZ8ovYuCcBLzJlqd3ehOin7BLiAyrX) (requires browser)
+2. Extract contents into `data/` folder
+3. Initialize generator submodules
+```bash
+git submodule init
+git submodule update
+```
+4. Download and install FastDownward v21.12 (instructions [here](https://www.fast-downward.org/ObtainingAndRunningFastDownward))
+```bash
+tar -xvzf fast-downward-21.12.tar.gz
+cd fast-downward-21.12
+./build.py
+```
+5. Build train dataset (WARNING: takes a *long* time)
+```bash
+python level_solver.py
+```
+6. Train model
+```bash
+python model.py
+```
+7. Predict the solvability of a custom level (TODO)
+```bash
+```
+
 ## Motivation
 
 It is very important for puzzle game levels to be solvable in order for the player to have a
-satisfying experience. Puzzle level designers must usually solve the level they design themselves.
-Automated tools for solving puzzle levels like planners exist, but typically take a long time to
+satisfying experience. Puzzle level designers must usually solve the levels they design themselves.
+Automated tools for solving levels like planners exist, but typically take a long time to
 return a verdict on large levels.
 
 Having a tool which can quickly return a verdict for a level would make it easier for puzzle level

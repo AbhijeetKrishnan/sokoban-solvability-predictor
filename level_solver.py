@@ -177,7 +177,7 @@ def solve(level: SokoLevel, keep_problem: bool=False) -> bool:
 
 def build_soln_csv():
     import csv
-    with open('is_solvable.csv', 'w', newline='') as csvfile:
+    with open('is_solvable.csv', 'a', newline='') as csvfile:
         field_names = ['level_desc', 'is_solvable']
         writer = csv.DictWriter(csvfile, fieldnames=field_names)
         writer.writeheader()
@@ -190,7 +190,7 @@ def build_soln_csv():
             writer.writerow(row)
 
 if __name__ == '__main__':
-    all_levels = process_data_directory(augment=True)
+    all_levels = process_data_directory(data_root=u'data/parberry', augment=False)
     # level = all_levels[0]
     # soln_exists = solve(level, keep_problem=True)
     # print(soln_exists)
