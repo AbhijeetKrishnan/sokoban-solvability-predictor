@@ -142,7 +142,7 @@ def solve(level: SokoLevel, keep_problem: bool=False) -> bool:
     Returns:
         bool: whether the level is solvable or not
     """
-    FAST_DOWNWARD = os.path.join(os.path.expanduser('~'), 'fast-downward-20.06', 'fast-downward.py')
+    FAST_DOWNWARD = os.path.join(os.path.expanduser('~'), 'fast-downward-21.12', 'fast-downward.py')
     ALIAS = 'lama-first'
     DOMAIN = os.path.join(os.getcwd(), 'domain.pddl')
     TIMEOUT = 60 # in seconds
