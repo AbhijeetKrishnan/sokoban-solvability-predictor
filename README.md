@@ -57,7 +57,7 @@ The levels used in this project have been sourced from -
 * Jordi Domènech's entire Sokoban collection
     ([link](https://sokoban-jd.blogspot.com/p/all-my-sokoban-collections.html))
 
-All levels were either originally in, or were modified to fit the level description format described
+All levels were either originally in, or were modified to fit, the level description format described
 in the [Sokoban Wiki](http://www.sokobano.de/wiki/index.php?title=Level_format). Levels were padded
 with walls to fit a $50 \times 50$ grid. The input to the model is thus a $50 \times 50 \times 7$ tensor (the tile types are
 one-hot encoded)
@@ -70,7 +70,7 @@ as a basis, levels are converted into a PDDL problem file and passed as input to
 The problem of finding unsolvable levels was solved by augmenting the dataset. For
 every level, all block tiles were turned one-at-a-time into an empty tile, and the resulting unsolvable
 levels were added back into the dataset. This creates a somewhat more even distribution of the two classes
-(solvable/unsolvable) since every level in the initially sourced levels are designed to be solvable.
+(solvable/unsolvable) since every level in those initially sourced levels was designed to be solvable.
 
 Additional levels were obtained using the following level generators -
 
@@ -118,7 +118,7 @@ TODO: baselines for comparison
 
 ### Accuracy
 
-The test accuracy of the model was found to be $74.69\%$. A model which predicted the majority label would have had an accuracy of $69.4\%$. The F1 score is $0.84$ ($[0,1]$, $1$ is perfect classification) and the MCC is $0.27$ ($[-1,1]$, $0$ is random, $1$ is perfect classification).
+The test accuracy of the model was found to be $74.69\%$. A model which predicted the majority label would have had an accuracy of $72.5\%$. The F1 score is $0.84$ ($[0,1]$, $1$ is perfect classification) and the MCC is $0.27$ ($[-1,1]$, $0$ is random, $1$ is perfect classification).
 
 ### Runtime Performance
 
