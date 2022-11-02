@@ -25,8 +25,13 @@ def read_dataset(dataset: str, pad_width: int, pad_height: int):
 
 def create_model():
     inputs = layers.Input(shape=(50, 50, 7))
-
-    x = layers.Flatten()(inputs)
+    
+    x = inputs
+    x = layers.Conv2D(1, 1, activation='relu')(x)
+    x = layers.Conv2D(16, 10, activation='relu')(x)
+    # x = layers.Conv2D(8, 15, activation='relu')(x)
+    # x = layers.Conv2D(4, 20, activation='relu')(x)
+    x = layers.Flatten()(x)
     x = layers.Dense(10, activation='tanh')(x)
     x = layers.Dense(10, activation='tanh')(x)
     outputs = layers.Dense(1, activation='sigmoid')(x)
@@ -65,8 +70,8 @@ def load_level_dataset(test_train_split=0.2):
     pos_test = int(tf.math.count_nonzero(y_test))
     size_test = int(tf.size(y_test))
 
-    print(f'Class balance (train): {pos_train} / {size_train - pos_train}')
-    print(f'Class balance (test): {pos_test} / {size_test - pos_test}')
+    print(f'Class balance (train): {pos_train} / {size_train - pos_train} ({(pos_train / size_train) * 100}%)')
+    print(f'Class balance (test): {pos_test} / {size_test - pos_test} ({(pos_test / size_test) * 100}%)')
 
     return (x_train, y_train), (x_test, y_test)
 
@@ -84,7 +89,13 @@ def train_model():
     model.compile(
         optimizer = tf.keras.optimizers.SGD(),
         loss = tf.keras.losses.BinaryCrossentropy(),
-        metrics = [tf.keras.metrics.BinaryAccuracy()]
+        metrics = [
+            tf.keras.metrics.BinaryAccuracy(), 
+            tf.keras.metrics.TruePositives(), 
+            tf.keras.metrics.TrueNegatives(),
+            tf.keras.metrics.FalsePositives(),
+            tf.keras.metrics.FalseNegatives(),
+        ]
     )
 
     log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -93,13 +104,13 @@ def train_model():
     history = model.fit(
         x_train,
         y_train,
-        batch_size=64,
-        epochs=2,
+        batch_size=8,
+        epochs=10,
         validation_data=(x_val, y_val),
         callbacks=[tensorboard_callback]
     )
 
-    results = model.evaluate(x_test, y_test, batch_size=128)
+    results = model.evaluate(x_test, y_test, batch_size=8, return_dict=True)
     return history, results
 
 if __name__ == '__main__':

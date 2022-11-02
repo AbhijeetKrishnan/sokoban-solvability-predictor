@@ -30,7 +30,7 @@ python level_solver.py
 ```bash
 python model.py
 ```
-7. Predict the solvability of a custom level (TODO)
+7. Predict the solvability of a custom level (TODO:)
 ```bash
 ```
 
@@ -59,11 +59,11 @@ The levels used in this project have been sourced from -
 
 All levels were either originally in, or were modified to fit the level description format described
 in the [Sokoban Wiki](http://www.sokobano.de/wiki/index.php?title=Level_format). Levels were padded
-with walls to fit a 50x50 grid. The input to the model is thus a 50x50x7 tensor (the tile types are
+with walls to fit a $50 \times 50$ grid. The input to the model is thus a $50 \times 50 \times 7$ tensor (the tile types are
 one-hot encoded)
 
 Solvability of a level was determined using the [FastDownward](https://www.fast-downward.org/)
-planner (v20.06). Using the [IPC-2011 Sokoban
+planner (v21.12). Using the [IPC-2011 Sokoban
 domain](https://github.com/potassco/pddl-instances/blob/master/ipc-2011/domains/sokoban-sequential-satisficing/domain.pddl)
 as a basis, levels are converted into a PDDL problem file and passed as input to the planner.
 
@@ -74,25 +74,56 @@ levels were added back into the dataset. This creates a somewhat more even distr
 
 Additional levels were obtained using the following level generators -
 
-* TBD
+* [(Taylor and Parberry, 2011)](https://github.com/Dagobah0/ProceduralSokoban)
+
+The data was split into train/test in an $80:20$ ratio. The train data was further split into train/valid in an $80:20$ ratio. The class balance was -
+
+||Train|Test|
+|:-:|:-:|:-:|
+|Positive|876|232|
+|Negative|407|88|
+|%Positive|68.3|72.5|
+|Total|**1283**|**320**|
+
 
 ### Model
 
-The model is a simple, fully-connected NN with 2 layers with 10 units each, which use tanh
-activation. The final sigmoid layer provides the prediction. The network is trained using SGD with a
-batch size of 64 for 2 epochs.
+| ![Model Architecture Diagram](/assets/model.svg) |
+|:--:|
+| Model Architecure Diagram created using [NN SVG](http://alexlenail.me/NN-SVG/)|
+
+
+The model uses a conv block to flatten the input channels from 7 to 1. It then uses another conv block to find useful features in the flattened image. Two fully-connected layers are then used to make the prediction from the calculated features. The model has a total of $270,715$ trainable parameters.
+
+### Training
+
+The network is trained using SGD with a batch size of 8 for 10 epochs. The loss function used is binary cross-entropy.
+
+| ![Graph of Loss vs. Epoch number](/assets/epoch_loss.svg) |
+|:-:|
+| Graph of loss vs. epoch number for train (grey) and validation (orange) |
+
+
+| ![Graph of Binanry Accuracy vs. Epoch number](/assets/epoch_binary_accuracy.svg) |
+|:-:|
+| Graph of binary accuracy vs. epoch number for train (grey) and validation (orange) |
 
 ## Evaluation
 
-The runtime performance and prediction accuracy of the model is compared to the YASC Sokoban Solver.
-### Runtime Performance
+The trained model was evaluated on the test data using a batch size of 8.
 
-### Accuracy
+TODO: baselines for comparison
 
 ## Results
 
-TBD
+### Accuracy
+
+The test accuracy of the model was found to be $74.69\%$. A model which predicted the majority label would have had an accuracy of $69.4\%$. The F1 score is $0.84$ ($[0,1]$, $1$ is perfect classification) and the MCC is $0.27$ ($[-1,1]$, $0$ is random, $1$ is perfect classification).
+
+### Runtime Performance
+
+TODO:
 
 ## Conclusion
 
-TBD
+The model is able to achieve a marginal improvement over the majority selector, but it is unclear whether it would show similar results on other problems, or whether it would provide meaningful benefit over using a planning-based solver.
