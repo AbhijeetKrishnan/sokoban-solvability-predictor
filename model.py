@@ -1,11 +1,10 @@
 import datetime
 import csv
 
-import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
-from level_parser import SokoLevel, SokoTile, logger, str_to_level, _pad_level
+from level_parser import SokoLevel, SokoTile, logger
 
 
 def read_dataset(dataset: str, pad_width: int, pad_height: int):
@@ -17,9 +16,9 @@ def read_dataset(dataset: str, pad_width: int, pad_height: int):
         for row in reader:
             level_desc = row['level_desc'] # level description
             is_solvable = bool(row['is_solvable'] == 'True')
-            level = str_to_level(level_desc)
-            padded_level = _pad_level(level, pad_width, pad_height)
-            levels.append(padded_level)
+            level = SokoLevel.from_str(level_desc)
+            level._pad_level(pad_width, pad_height)
+            levels.append(level)
             labels.append(is_solvable)
     return levels, labels
 

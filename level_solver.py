@@ -1,33 +1,14 @@
 """Solves a parsed Sokoban level by translating the level to PDDL and using a planner
 """
 
+import csv
 import os
 import random
 import subprocess
+from typing import List
 
-from level_parser import SokoLevel, SokoTile, logger, process_data_directory
+from level_parser import SokoLevel, SokoTile, logger
 
-
-def level_to_string(level: SokoLevel, is_comment: bool=False) -> str:
-    """Translate a level to a single-line string representing the level using character tiles
-
-    Args:
-        level (SokoLevel): SokoTile level array
-        is_comment (bool): whether the string is to be used as a PDDL comment
-
-    Returns:
-        str: single-line string representing level using character tile representation. Lines in the
-        level are separated by '/'
-    """
-    ret_arr = []
-    for row in level:
-        str_row = [tile.to_char() for tile in row]
-        ret_arr.append(str_row)
-    if is_comment:
-        ret_str = '\n'.join([f'; {"".join(row)}' for row in ret_arr])
-    else:
-        ret_str = '/'.join([f'{"".join(row)}' for row in ret_arr])
-    return ret_str
 
 def translate_to_pddl(level: SokoLevel) -> str:
     """Translates a parsed Sokoban level into a PDDL problem file which matches the IPC 2011 Sokoban
@@ -36,11 +17,11 @@ def translate_to_pddl(level: SokoLevel) -> str:
     problem_name = f'p{random.randrange(100, 999)}-microban-sequential'
     domain = 'sokoban-sequential'
     objects = []
-    init = []
+    init: List[tuple] = []
     goal = []
     stones = [] # box tiles are referred to as "stones" in the IPC Sokoban domain
 
-    def build_objects(level):
+    def build_objects(level: SokoLevel):
         # add directions
         objects.append(('dir-down', 'direction'))
         objects.append(('dir-left', 'direction'))
@@ -51,7 +32,7 @@ def translate_to_pddl(level: SokoLevel) -> str:
         objects.append(('player-01', 'player'))
         
         # add positions; store stone (box) locations
-        for row_idx, row in enumerate(level):
+        for row_idx, row in enumerate(level.level):
             for col_idx, col in enumerate(row):
                 objects.append((f'pos-{col_idx+1:02}-{row_idx+1:02}', 'location'))
                 if col == SokoTile.BOX or col == SokoTile.B_ON_GOAL:
@@ -59,17 +40,17 @@ def translate_to_pddl(level: SokoLevel) -> str:
         for i in range(len(stones)):
             objects.append((f'stone-{i+1:02}', 'stone'))
 
-    def build_init(level):
+    def build_init(level: SokoLevel):
         goals = []
         non_goals = []
         move_dirs = []
-        at_player = None
+        at_player = []
         at_stone = []
         at_goal = []
         clear = []
         stone_idx = 0
 
-        for row_idx, row in enumerate(level):
+        for row_idx, row in enumerate(level.level):
             for col_idx, col in enumerate(row):
                 pos = f'pos-{col_idx+1:02}-{row_idx+1:02}'
                 if col in (SokoTile.GOAL, SokoTile.P_ON_GOAL, SokoTile.B_ON_GOAL):
@@ -80,7 +61,7 @@ def translate_to_pddl(level: SokoLevel) -> str:
                     for dir in ((-1, 0, 'dir-up'), (0, -1, 'dir-left'), (1, 0, 'dir-down'), (0, 1, 'dir-right')):
                         new_row, new_col = row_idx + dir[0], col_idx + dir[1]
                         new_pos = f'pos-{new_col+1:02}-{new_row+1:02}'
-                        if 0 <= new_row < len(level) and 0 <= new_col < len(row) and level[new_row][new_col] is not SokoTile.WALL:
+                        if 0 <= new_row < len(level.level) and 0 <= new_col < len(row) and level.level[new_row][new_col] is not SokoTile.WALL:
                             move_dirs.append(('MOVE-DIR', pos, new_pos, dir[2]))
                 if col in (SokoTile.PLAYER, SokoTile.P_ON_GOAL):
                     at_player = [('at', 'player-01', pos)]
@@ -108,7 +89,7 @@ def translate_to_pddl(level: SokoLevel) -> str:
     build_goal()
 
     def construct_problem_str():
-        comment_str = level_to_string(level, True)
+        comment_str = level.__str__(True)
         objects_str = '\n\t\t'.join([f'{obj[0]} - {obj[1]}' for obj in objects])
         init_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in init])
         goal_str = '\n\t\t'.join([f'({" ".join(map(str, pred))})' for pred in goal])
@@ -142,7 +123,7 @@ def solve(level: SokoLevel, keep_problem: bool=False) -> bool:
     Returns:
         bool: whether the level is solvable or not
     """
-    FAST_DOWNWARD = os.path.join(os.path.expanduser('~'), 'fast-downward-21.12', 'fast-downward.py')
+    FAST_DOWNWARD = os.path.join(os.path.expanduser('~'), 'repos', 'downward', 'fast-downward.py')
     ALIAS = 'lama-first'
     DOMAIN = os.path.join(os.getcwd(), 'domain.pddl')
     TIMEOUT = 60 # in seconds
@@ -155,7 +136,7 @@ def solve(level: SokoLevel, keep_problem: bool=False) -> bool:
     try:
         problem = translate_to_pddl(level)
     except Exception as e:
-        logger.error(f'Error caused by {level_to_string(level)}')
+        logger.error(f'Error caused by {str(level)}')
         raise e
     write_problem_str(problem)
 
@@ -165,7 +146,7 @@ def solve(level: SokoLevel, keep_problem: bool=False) -> bool:
         process = subprocess.run(command_list, timeout=TIMEOUT)
         logger.debug(process)
     except subprocess.TimeoutExpired:
-        logger.warning(f'Timeout after {TIMEOUT}s on problem {level_to_string(level)}')
+        logger.warning(f'Timeout after {TIMEOUT}s on problem {str(level)}')
     if os.path.isfile('sas_plan'):
         exists = True
         os.remove('sas_plan')
@@ -175,23 +156,19 @@ def solve(level: SokoLevel, keep_problem: bool=False) -> bool:
         os.remove(problem_filename)
     return exists
 
-def build_soln_csv():
-    import csv
-    with open('is_solvable.csv', 'a', newline='') as csvfile:
-        field_names = ['level_desc', 'is_solvable']
-        writer = csv.DictWriter(csvfile, fieldnames=field_names)
-        writer.writeheader()
-        all_levels = process_data_directory()
-        for level in all_levels:
-            level_str = level_to_string(level)
-            soln_exists = solve(level)
-            row = {'level_desc': level_str, 'is_solvable': soln_exists}
-            logger.debug(f'Writing row {row}')
-            writer.writerow(row)
-
 if __name__ == '__main__':
-    all_levels = process_data_directory(data_root=u'data/parberry', augment=False)
-    # level = all_levels[0]
-    # soln_exists = solve(level, keep_problem=True)
-    # print(soln_exists)
-    build_soln_csv()
+    input_csv = 'data/pre_solve.csv'
+    output_csv = 'data/post_solve.csv'
+    with open(input_csv, 'r') as infile, open(output_csv, 'w', newline='') as outfile:
+        fieldnames = ['level_desc', 'is_solvable']
+        reader = csv.DictReader(infile)
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for row in reader:
+            level_desc = row['level_desc']
+            logger.debug('Obtained level desc {}'.format(level_desc))
+            level = SokoLevel.from_str(level_desc)
+            logger.info('Solving level {}'.format(level))
+            is_solvable = solve(level)
+            writer.writerow({'level_desc': level_desc, 'is_solvable': is_solvable})

@@ -10,29 +10,30 @@ This is a machine learning project attempting to build a model to predict the so
 ## How to run
 
 1. Download JD_Sokoban level collection from [here](https://u.pcloud.link/publink/show?code=XZ01cWkZ8ovYuCcBLzJlqd3ehOin7BLiAyrX) (requires browser)
-2. Extract contents into `data/` folder
+2. Extract contents into a `levels/` folder
 3. Initialize generator submodules
-```bash
-git submodule init
-git submodule update
-```
+    ```bash
+    git submodule init
+    git submodule update
+    ```
 4. Download and install FastDownward v21.12 (instructions [here](https://www.fast-downward.org/ObtainingAndRunningFastDownward))
-```bash
-tar -xvzf fast-downward-21.12.tar.gz
-cd fast-downward-21.12
-./build.py
-```
-5. Build train dataset (WARNING: takes a *long* time)
-```bash
-python level_solver.py
-```
+    ```bash
+    tar -xvzf fast-downward-21.12.tar.gz
+    cd fast-downward-21.12
+    ./build.py release
+    ```
+5. Build train dataset (WARNING: takes a *long* time))
+    ```bash
+    python level_parser.py
+    python level_solver.py
+    ```
 6. Train model
-```bash
-python model.py
-```
+    ```bash
+    python model.py
+    ```
 7. Predict the solvability of a custom level (TODO:)
-```bash
-```
+    ```bash
+    ```
 
 ## Motivation
 
