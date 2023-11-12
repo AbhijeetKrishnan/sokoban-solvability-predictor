@@ -180,6 +180,9 @@ class SokoLevel:
                     ret.append(SokoLevel(new_level))
         return ret
 
+    def as_numlist(self):
+        return [[int(tile) for tile in row] for row in self.level]
+
 def _parse_levels(contents: str) -> Tuple[List[SokoLevel], int, int]:
     """Parse a text file containing Sokoban levels and output the list of levels in it.
     Each level is output as an array of SokoTiles.

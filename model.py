@@ -7,6 +7,9 @@ from tensorflow.keras import layers
 from level_parser import SokoLevel, SokoTile, logger
 
 
+PAD_WIDTH = 50
+PAD_HEIGHT = 50
+
 def read_dataset(dataset: str, pad_width: int, pad_height: int):
     "Read the csv dataset of unpadded level strings and solvability labels, pad them and return"
     levels = []
@@ -22,8 +25,8 @@ def read_dataset(dataset: str, pad_width: int, pad_height: int):
             labels.append(is_solvable)
     return levels, labels
 
-def create_model():
-    inputs = layers.Input(shape=(50, 50, 7))
+def create_model(pad_width: int, pad_height: int) -> tf.keras.Model:
+    inputs = layers.Input(shape=(pad_width, pad_height, len(SokoTile)))
     
     x = inputs
     x = layers.Conv2D(1, 1, activation='relu')(x)
@@ -39,8 +42,10 @@ def create_model():
     logger.info(model.summary())
     return model
 
-def load_level_dataset(test_train_split=0.2):
-    levels, labels = read_dataset('is_solvable.csv', 50, 50) # TODO: infer padding params from dataset
+def load_level_dataset(pad_width: int, pad_height: int, test_train_split: float=0.2):
+    levels, labels = read_dataset('is_solvable.csv', pad_width, pad_height)
+    levels = list(map(lambda sokolevel: sokolevel.as_numlist(), levels))
+    print(levels[0])
 
     levels_tensor = tf.convert_to_tensor(levels, dtype=tf.int32)
     logger.debug(f'Levels tensor shape: {levels_tensor.shape}')
@@ -74,17 +79,13 @@ def load_level_dataset(test_train_split=0.2):
 
     return (x_train, y_train), (x_test, y_test)
 
-def train_model():
-    (x_train, y_train), (x_test, y_test) = load_level_dataset()
-
-    VALIDATION_SHARE = 0.2
-    num_validation = int(len(x_train) * VALIDATION_SHARE)
+def train_model(model, x_train, y_train, validation_share: float=0.2):
+    num_validation = int(len(x_train) * validation_share)
     x_val = x_train[-num_validation:]
     y_val = y_train[-num_validation:]
     x_train = x_train[:-num_validation]
     y_train = y_train[:-num_validation]
 
-    model = create_model()
     model.compile(
         optimizer = tf.keras.optimizers.SGD(),
         loss = tf.keras.losses.BinaryCrossentropy(),
@@ -106,13 +107,19 @@ def train_model():
         batch_size=8,
         epochs=10,
         validation_data=(x_val, y_val),
-        callbacks=[tensorboard_callback]
+        # callbacks=[tensorboard_callback]
     )
 
+    return history
+
+def test_model(model, x_test, y_test):
     results = model.evaluate(x_test, y_test, batch_size=8, return_dict=True)
-    return history, results
+    return results
 
 if __name__ == '__main__':
-    history, results = train_model()
+    (x_train, y_train), (x_test, y_test) = load_level_dataset(PAD_WIDTH, PAD_HEIGHT)
+    model = create_model(PAD_WIDTH, PAD_HEIGHT)
+    history = train_model(model, x_train, y_train)
+    results = test_model(model, x_test, y_test)
     print(history)
     print(results)

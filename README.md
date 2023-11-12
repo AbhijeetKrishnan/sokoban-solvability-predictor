@@ -1,39 +1,43 @@
 # Sokoban Solvability Prediction Model
 
+![TensorFlow](https://img.shields.io/badge/TensorFlow-%23FF6F00.svg?style=for-the-badge&logo=TensorFlow&logoColor=white)
+
 This is a machine learning project attempting to build a model to predict the solvability of a
 [Sokoban](https://en.wikipedia.org/wiki/Sokoban) level.
 
 | ![A Sokoban level](https://1.bp.blogspot.com/-ChzyoJjO6TU/Uqi1c6N6FHI/AAAAAAAAFFo/qBeHC3ETU5c/s1600/haikemono.png) |
-|:--:|
-| *Ole* from the Haikemono collection of Sokoban levels by Jordi Domènech|
+| :----------------------------------------------------------------------------------------------------------------: |
+|                      _Ole_ from the Haikemono collection of Sokoban levels by Jordi Domènech                       |
 
-## How to run
+## Instructions
 
-1. Download JD_Sokoban level collection from [here](https://u.pcloud.link/publink/show?code=XZ01cWkZ8ovYuCcBLzJlqd3ehOin7BLiAyrX) (requires browser)
-2. Extract contents into a `levels/` folder
-3. Initialize generator submodules
-    ```bash
-    git submodule init
-    git submodule update
-    ```
-4. Download and install FastDownward v21.12 (instructions [here](https://www.fast-downward.org/ObtainingAndRunningFastDownward))
-    ```bash
-    tar -xvzf fast-downward-21.12.tar.gz
-    cd fast-downward-21.12
-    ./build.py release
-    ```
-5. Build train dataset (WARNING: takes a *long* time))
-    ```bash
-    python level_parser.py
-    python level_solver.py
-    ```
+1. Download the [JD_Sokoban](https://u.pcloud.link/publink/show?code=XZ01cWkZ8ovYuCcBLzJlqd3ehOin7BLiAyrX) level collection (requires a browser).
+2. Extract contents into a `levels/` folder.
+3. Initialize generator submodules.
+   ```bash
+   git submodule init
+   git submodule update
+   ```
+4. Download and install the [FastDownward v21.12](https://www.fast-downward.org/ObtainingAndRunningFastDownward) planner.
+   ```bash
+   tar -xvzf fast-downward-21.12.tar.gz
+   cd fast-downward-21.12
+   ./build.py release
+   ```
+5. Build train dataset (WARNING: takes a _long_ time)
+   ```bash
+   python level_parser.py
+   python level_solver.py
+   ```
 6. Train model
-    ```bash
-    python model.py
-    ```
+   ```bash
+   python model.py
+   ```
 7. Predict the solvability of a custom level (TODO:)
-    ```bash
-    ```
+
+   ```bash
+
+   ```
 
 ## Motivation
 
@@ -55,8 +59,8 @@ build a level solvability checker.
 
 The levels used in this project have been sourced from -
 
-* Jordi Domènech's entire Sokoban collection
-    ([link](https://sokoban-jd.blogspot.com/p/all-my-sokoban-collections.html))
+- Jordi Domènech's entire Sokoban collection
+  ([link](https://sokoban-jd.blogspot.com/p/all-my-sokoban-collections.html))
 
 All levels were either originally in, or were modified to fit, the level description format described
 in the [Sokoban Wiki](http://www.sokobano.de/wiki/index.php?title=Level_format). Levels were padded
@@ -75,24 +79,22 @@ levels were added back into the dataset. This creates a somewhat more even distr
 
 Additional levels were obtained using the following level generators -
 
-* [(Taylor and Parberry, 2011)](https://github.com/Dagobah0/ProceduralSokoban)
+- [(Taylor and Parberry, 2011)](https://github.com/Dagobah0/ProceduralSokoban)
 
 The data was split into train/test in an $80:20$ ratio. The train data was further split into train/valid in an $80:20$ ratio. The class balance was -
 
-||Train|Test|
-|:-:|:-:|:-:|
-|Positive|876|232|
-|Negative|407|88|
-|%Positive|68.3|72.5|
-|Total|**1283**|**320**|
-
+|           |  Train   |  Test   |
+| :-------: | :------: | :-----: |
+| Positive  |   876    |   232   |
+| Negative  |   407    |   88    |
+| %Positive |   68.3   |  72.5   |
+|   Total   | **1283** | **320** |
 
 ### Model
 
-| ![Model Architecture Diagram](/assets/model.svg) |
-|:--:|
-| Model Architecure Diagram created using [NN SVG](http://alexlenail.me/NN-SVG/)|
-
+|                ![Model Architecture Diagram](/assets/model.svg)                 |
+| :-----------------------------------------------------------------------------: |
+| Model Architecture Diagram created using [NN SVG](http://alexlenail.me/NN-SVG/) |
 
 The model uses a conv block to flatten the input channels from 7 to 1. It then uses another conv block to find useful features in the flattened image. Two fully-connected layers are then used to make the prediction from the calculated features. The model has a total of $270,715$ trainable parameters.
 
@@ -100,13 +102,12 @@ The model uses a conv block to flatten the input channels from 7 to 1. It then u
 
 The network is trained using SGD with a batch size of 8 for 10 epochs. The loss function used is binary cross-entropy.
 
-| ![Graph of Loss vs. Epoch number](/assets/epoch_loss.svg) |
-|:-:|
+|        ![Graph of Loss vs. Epoch number](/assets/epoch_loss.svg)        |
+| :---------------------------------------------------------------------: |
 | Graph of loss vs. epoch number for train (grey) and validation (orange) |
 
-
-| ![Graph of Binanry Accuracy vs. Epoch number](/assets/epoch_binary_accuracy.svg) |
-|:-:|
+|  ![Graph of Binary Accuracy vs. Epoch number](/assets/epoch_binary_accuracy.svg)   |
+| :--------------------------------------------------------------------------------: |
 | Graph of binary accuracy vs. epoch number for train (grey) and validation (orange) |
 
 ## Evaluation
@@ -119,7 +120,7 @@ TODO: baselines for comparison
 
 ### Accuracy
 
-The test accuracy of the model was found to be $74.69\%$. A model which predicted the majority label would have had an accuracy of $72.5\%$. The F1 score is $0.84$ ($[0,1]$, $1$ is perfect classification) and the MCC is $0.27$ ($[-1,1]$, $0$ is random, $1$ is perfect classification).
+The test accuracy of the model was found to be $74.69\%$. A model which simply predicted the majority label would have had an accuracy of $72.5\%$. The F1 score is $0.84$ ($[0,1]$, $1$ is perfect classification) and the MCC is $0.27$ ($[-1,1]$, $0$ is random, $1$ is perfect classification).
 
 ### Runtime Performance
 
